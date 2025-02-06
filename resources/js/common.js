@@ -27,6 +27,8 @@ function struct2idl(goStruct){
             thriftType = 'double'
         } else if(goType=== 'bool'){
             thriftType = 'bool'
+        }  else if(goType=== 'any'){
+            thriftType = 'string'
         } else {
             return goType
         }
@@ -57,7 +59,7 @@ function struct2idl(goStruct){
                 type = getThriftType(goTypeString)
             }
             count = count + 1
-            return `    ${count}: required ${type}   ${structName}     (api.body = "${thriftExtra.split('"')[1]}")`
+            return `    ${count}: ${type}   ${structName}     (api.body = "${thriftExtra.split('"')[1]}")`
         }
     })
     const thrift = lineAr.join('\n')
