@@ -11,6 +11,59 @@ function initAnalytics()
 	ga('send', 'pageview');
 }
 
+
+function struct2idl(goStruct){
+    let count = 0
+    let enter = false
+    function getThriftType(goType){
+        let thriftType = ''
+        if (goType==='string'){
+            thriftType = 'string'
+        } else if(goType=== 'int'){
+            thriftType = 'i32'
+        } else if(goType=== 'int64'){
+            thriftType = 'i64'
+        } else if(goType=== 'float64'){
+            thriftType = 'double'
+        } else if(goType=== 'bool'){
+            thriftType = 'bool'
+        } else {
+            return goType
+        }
+        return thriftType
+    }
+
+    const lineAr = goStruct.split('\n').map((line)=>{
+        line = line.trim()
+        if(!line){
+        }else if(line==='}'){
+            enter = false
+            count = 0
+            return line
+        } else if(line.startsWith('type ')  && line.endsWith(' struct {')){
+            enter = true
+            const typename = line.replace(/.*type/,'').replace(/struct.*/,'').trim()
+            return `struct ${typename} {`
+        } else {
+            // https://github.com/creditkarma/thrift-parser/blob/e4324a10ff65fef4bcc63cb1e939abcb445c0428/src/main/types.ts#L106
+            const [structName , goTypeString, thriftExtra] = line.split(' ').map((item)=>{
+                return item.trim()
+            })
+            let type = ''
+            if(goTypeString.startsWith('[]')) {
+                type = getThriftType(goTypeString.replace('[]',''))
+                type = `list<${type}>`
+            } else {
+                type = getThriftType(goTypeString)
+            }
+            count = count + 1
+            return `    ${count}: required ${type}   ${structName}     (api.body = "${thriftExtra.split('"')[1]}")`
+        }
+    })
+    const thrift = lineAr.join('\n')
+    console.info(thrift)
+}
+
 $(function()
 {
 	const emptyInputMsg = "Paste JSON here";
@@ -48,6 +101,9 @@ $(function()
 				finalOutput = gofmt(output.go);
 			var coloredOutput = hljs.highlight("go", finalOutput);
 			$('#output').html(coloredOutput.value);
+			if(!$('#inline').is(':checked')){
+				console.info(struct2idl(output.go))
+			}
 		}
 	}
 
